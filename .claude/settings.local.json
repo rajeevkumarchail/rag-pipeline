@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gradle test *)",
+      "Bash(sdk list *)",
+      "Read(//usr/local/lib/**)",
+      "Read(//opt/**)",
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/openjdk-25 /home/rajeevkumar/.jdks/openjdk-25/bin/java *)",
+      "Read(//home/rajeevkumar/**)",
+      "Bash(curl -fsSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o /tmp/gradle.zip)",
+      "Bash(unzip -q /tmp/gradle.zip -d /tmp/)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/openjdk-25 /tmp/gradle-8.7/bin/gradle wrapper *)",
+      "Bash(curl -fsSL https://services.gradle.org/distributions/gradle-8.13-bin.zip -o /tmp/gradle813.zip)",
+      "Bash(unzip -q /tmp/gradle813.zip -d /tmp/)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/openjdk-25 /tmp/gradle-8.13/bin/gradle wrapper *)",
+      "Bash(curl -fsSL \"https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz\" -o /tmp/jdk17.tar.gz)",
+      "Bash(mkdir -p /home/rajeevkumar/.jdks)",
+      "Bash(tar -xzf /tmp/jdk17.tar.gz -C /home/rajeevkumar/.jdks)",
+      "Bash(/home/rajeevkumar/.jdks/jdk-17.0.2/bin/java -version)",
+      "Bash(curl -fsSL \"https://downloads.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz\" -o /tmp/maven.tar.gz)",
+      "Bash(curl -fsSL \"https://downloads.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz\" -o /tmp/maven.tar.gz)",
+      "Bash(curl -fsSL \"https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz\" -o /tmp/maven.tar.gz)",
+      "Bash(tar -xzf /tmp/maven.tar.gz -C /opt/)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/jdk-17.0.2 /opt/apache-maven-3.9.6/bin/mvn -version)",
+      "Bash(mkdir -p /home/rajeevkumar/tools)",
+      "Bash(tar -xzf /tmp/maven.tar.gz -C /home/rajeevkumar/tools)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/jdk-17.0.2 /home/rajeevkumar/tools/apache-maven-3.9.6/bin/mvn -version)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/jdk-17.0.2 /home/rajeevkumar/tools/apache-maven-3.9.6/bin/mvn test *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/jdk-17.0.2 /home/rajeevkumar/tools/apache-maven-3.9.6/bin/mvn package -DskipTests)",
+      "Bash(JAVA_HOME=/home/rajeevkumar/.jdks/jdk-17.0.2 /home/rajeevkumar/tools/apache-maven-3.9.6/bin/mvn spring-boot:run -q)",
+      "Bash(curl -s http://localhost:8080/actuator/health)",
+      "Bash(kill %1)",
+      "Bash(ollama --version)",
+      "Bash(curl -s http://localhost:11434/api/tags)"
+    ]
+  }
+}
