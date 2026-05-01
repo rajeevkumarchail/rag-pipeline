@@ -2,48 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>RAG Pipeline — Chunk Explorer</title>
+  <title>RAG Pipeline — Chunk &amp; Embed Explorer</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; padding: 2rem; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; padding: 2rem; max-width: 960px; margin: 0 auto; }
     h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+
     .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
     h2 { font-size: 1rem; margin-bottom: 1rem; color: #555; text-transform: uppercase; letter-spacing: .05em; }
+
     label { display: block; font-size: .875rem; margin-bottom: .4rem; color: #444; }
-    input[type=file], textarea { width: 100%; padding: .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .9rem; }
+    input[type=file], textarea, input[type=text] {
+      width: 100%; padding: .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .9rem;
+    }
     textarea { resize: vertical; min-height: 100px; }
+
+    .btn-row { display: flex; gap: .75rem; margin-top: .75rem; flex-wrap: wrap; }
     button {
-      margin-top: .75rem; padding: .5rem 1.25rem; background: #1a56db; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer; font-size: .9rem;
+      padding: .5rem 1.25rem; border: none; border-radius: 4px;
+      cursor: pointer; font-size: .9rem; white-space: nowrap;
     }
-    button:hover { background: #1648c0; }
-    button:disabled { background: #aaa; cursor: default; }
-    #stats { font-size: .85rem; color: #555; margin-top: .5rem; }
-    #results { margin-top: 1rem; }
-    .chunk {
-      border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: .75rem;
-      overflow: hidden;
-    }
+    button.primary { background: #1a56db; color: #fff; }
+    button.primary:hover { background: #1648c0; }
+    button.secondary { background: #e5e7eb; color: #222; }
+    button.secondary:hover { background: #d1d5db; }
+    button:disabled { background: #aaa !important; color: #eee !important; cursor: default; }
+
+    .error { color: #c00; font-size: .875rem; margin-top: .5rem; }
+    #stats { font-size: .85rem; color: #555; margin-bottom: .75rem; }
+
+    /* ── chunk cards ── */
+    .chunk { border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: .75rem; overflow: hidden; }
     .chunk-header {
       background: #f0f4ff; padding: .5rem .75rem; font-size: .8rem;
-      color: #333; display: flex; gap: 1.5rem; cursor: pointer;
-      user-select: none;
+      color: #333; display: flex; gap: 1.5rem; cursor: pointer; user-select: none; align-items: center;
     }
-    .chunk-header span { font-weight: 600; }
-    .chunk-body { padding: .75rem; font-size: .85rem; white-space: pre-wrap; word-break: break-word; display: none; }
+    .chunk-header .label { font-weight: 600; }
+    .chunk-header .expand { margin-left: auto; color: #888; }
+    .chunk-body { padding: .75rem; font-size: .85rem; display: none; }
     .chunk-body.open { display: block; }
-    .error { color: #c00; font-size: .9rem; margin-top: .5rem; }
+
+    /* similarity badge on header */
+    .sim-badge {
+      display: inline-block; padding: .15rem .45rem; border-radius: 10px;
+      font-size: .75rem; font-weight: 700; color: #fff;
+    }
+
+    /* text content section */
+    .section-label {
+      font-size: .7rem; text-transform: uppercase; letter-spacing: .06em;
+      color: #888; margin-bottom: .35rem; margin-top: .85rem;
+    }
+    .section-label:first-child { margin-top: 0; }
+    .chunk-text { white-space: pre-wrap; word-break: break-word; background: #fafafa;
+      border: 1px solid #eee; border-radius: 4px; padding: .5rem; font-size: .82rem; }
+
+    /* embedding stats */
+    .emb-stats {
+      display: flex; gap: 1.5rem; font-size: .8rem; color: #555; margin-bottom: .5rem; flex-wrap: wrap;
+    }
+    .emb-stats strong { color: #222; }
+
+    /* vector table */
+    .vector-table-wrap {
+      max-height: 220px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 4px;
+    }
+    .vector-table {
+      width: 100%; border-collapse: collapse; font-size: .78rem; font-family: monospace;
+    }
+    .vector-table thead th {
+      position: sticky; top: 0; background: #f3f4f6; padding: .3rem .6rem;
+      text-align: left; font-size: .7rem; text-transform: uppercase;
+      letter-spacing: .05em; color: #555; border-bottom: 1px solid #e5e7eb;
+    }
+    .vector-table tbody tr:nth-child(even) { background: #fafafa; }
+    .vector-table tbody td { padding: .25rem .6rem; color: #374151; }
+    .vector-table tbody td:first-child { color: #9ca3af; width: 4rem; }
+    .vector-table td.pos { color: #1d4ed8; }
+    .vector-table td.neg { color: #dc2626; }
+
+    /* ── similarity search ── */
+    #querySection { display: none; }
+    .sim-row { display: flex; gap: .75rem; align-items: flex-end; }
+    .sim-row input { flex: 1; }
+
+    /* rank highlight */
+    .chunk.rank-1 .chunk-header { background: #ecfdf5; }
+    .chunk.rank-2 .chunk-header { background: #f0fdf4; }
+    .chunk.rank-3 .chunk-header { background: #f7fef9; }
   </style>
 </head>
 <body>
-<h1>RAG Pipeline — Chunk Explorer</h1>
+<h1>RAG Pipeline — Chunk &amp; Embed Explorer</h1>
 
 <!-- File upload -->
 <div class="card">
   <h2>Upload a file</h2>
   <label>Choose a .txt, .md, or .pdf file</label>
   <input type="file" id="fileInput" accept=".txt,.md,.pdf">
-  <button id="uploadBtn" onclick="uploadFile()">Chunk it</button>
+  <div class="btn-row">
+    <button class="primary" id="uploadBtn" onclick="uploadFile()">Chunk it</button>
+    <button class="secondary" id="uploadEmbedBtn" onclick="uploadFile(true)">Chunk &amp; Embed</button>
+  </div>
   <div id="uploadError" class="error"></div>
 </div>
 
@@ -53,8 +113,11 @@
   <label>Text</label>
   <textarea id="textContent" placeholder="Paste any text here…"></textarea>
   <label style="margin-top:.75rem">Source ID</label>
-  <input type="text" id="sourceId" placeholder="e.g. my-doc" style="padding:.5rem;border:1px solid #ccc;border-radius:4px;width:100%;margin-top:.4rem">
-  <button onclick="chunkText()">Chunk it</button>
+  <input type="text" id="sourceId" placeholder="e.g. my-doc">
+  <div class="btn-row">
+    <button class="primary" onclick="chunkText()">Chunk it</button>
+    <button class="secondary" onclick="chunkText(true)">Chunk &amp; Embed</button>
+  </div>
   <div id="textError" class="error"></div>
 </div>
 
@@ -62,38 +125,61 @@
 <div class="card" id="resultsCard" style="display:none">
   <h2>Results</h2>
   <div id="stats"></div>
+  <div class="btn-row" id="embedBtnRow" style="margin-bottom:.75rem; display:none">
+    <button class="secondary" id="embedBtn" onclick="embedChunks()">Embed chunks</button>
+  </div>
   <div id="results"></div>
 </div>
 
+<!-- Similarity search -->
+<div class="card" id="querySection">
+  <h2>Similarity search</h2>
+  <div class="sim-row">
+    <input type="text" id="queryText" placeholder="Type a query…" onkeydown="if(event.key==='Enter') searchQuery()">
+    <button class="primary" onclick="searchQuery()">Search</button>
+  </div>
+  <div id="queryError" class="error"></div>
+</div>
+
 <script>
-  async function uploadFile() {
+  // ── state ──────────────────────────────────────────────────────────────
+  let currentChunks    = [];   // List<Chunk> from last chunk call
+  let currentEmbeddings = [];  // List<Embedding> from last embed call
+
+  // ── upload ─────────────────────────────────────────────────────────────
+  async function uploadFile(andEmbed = false) {
     const file = document.getElementById('fileInput').files[0];
     document.getElementById('uploadError').textContent = '';
     if (!file) { document.getElementById('uploadError').textContent = 'Pick a file first.'; return; }
 
-    const btn = document.getElementById('uploadBtn');
-    btn.disabled = true; btn.textContent = 'Chunking…';
+    const uploadBtn     = document.getElementById('uploadBtn');
+    const uploadEmbedBtn = document.getElementById('uploadEmbedBtn');
+    uploadBtn.disabled = true; uploadEmbedBtn.disabled = true;
+    uploadBtn.textContent = 'Chunking…'; uploadEmbedBtn.textContent = 'Chunking…';
 
     const form = new FormData();
     form.append('file', file);
 
     try {
-      const res = await fetch('/api/v1/chunks/upload', { method: 'POST', body: form });
+      const res  = await fetch('/api/v1/chunks/upload', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok) { document.getElementById('uploadError').textContent = data.error || res.statusText; return; }
+      currentChunks = data;
       renderChunks(data, file.name);
+      if (andEmbed) await embedChunks();
     } catch (e) {
       document.getElementById('uploadError').textContent = 'Request failed: ' + e.message;
     } finally {
-      btn.disabled = false; btn.textContent = 'Chunk it';
+      uploadBtn.disabled = false; uploadEmbedBtn.disabled = false;
+      uploadBtn.textContent = 'Chunk it'; uploadEmbedBtn.textContent = 'Chunk & Embed';
     }
   }
 
-  async function chunkText() {
-    const content = document.getElementById('textContent').value;
+  // ── chunk text ─────────────────────────────────────────────────────────
+  async function chunkText(andEmbed = false) {
+    const content  = document.getElementById('textContent').value;
     const sourceId = document.getElementById('sourceId').value || 'inline';
     document.getElementById('textError').textContent = '';
-
     if (!content.trim()) { document.getElementById('textError').textContent = 'Paste some text first.'; return; }
 
     try {
@@ -104,45 +190,188 @@
       });
       const data = await res.json();
       if (!res.ok) { document.getElementById('textError').textContent = data.error || res.statusText; return; }
+      currentChunks = data;
       renderChunks(data, sourceId);
+      if (andEmbed) await embedChunks();
     } catch (e) {
       document.getElementById('textError').textContent = 'Request failed: ' + e.message;
     }
   }
 
+  // ── embed ──────────────────────────────────────────────────────────────
+  async function embedChunks() {
+    if (!currentChunks.length) return;
+
+    const btn = document.getElementById('embedBtn');
+    btn.disabled = true; btn.textContent = 'Embedding…';
+
+    try {
+      const res = await fetch('/api/v1/embeddings/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentChunks)
+      });
+      const data = await res.json();
+      if (!res.ok) { alert('Embedding failed: ' + (data.error || res.statusText)); return; }
+      currentEmbeddings = data;
+      attachEmbeddings(data);
+      document.getElementById('embedBtnRow').style.display = 'none';
+      document.getElementById('querySection').style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Embed chunks';
+    }
+  }
+
+  // ── similarity search ──────────────────────────────────────────────────
+  async function searchQuery() {
+    const text = document.getElementById('queryText').value.trim();
+    document.getElementById('queryError').textContent = '';
+    if (!text) { document.getElementById('queryError').textContent = 'Type a query first.'; return; }
+    if (!currentEmbeddings.length) { document.getElementById('queryError').textContent = 'Embed chunks first.'; return; }
+
+    try {
+      const res = await fetch('/api/v1/embeddings/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      const qEmb = await res.json();
+      if (!res.ok) { document.getElementById('queryError').textContent = qEmb.error || res.statusText; return; }
+      applySimScores(qEmb.vector);
+    } catch (e) {
+      document.getElementById('queryError').textContent = 'Request failed: ' + e.message;
+    }
+  }
+
+  // ── render helpers ─────────────────────────────────────────────────────
   function renderChunks(chunks, source) {
+    currentEmbeddings = [];
     document.getElementById('resultsCard').style.display = 'block';
+    document.getElementById('querySection').style.display = 'none';
+
     const totalChars = chunks.reduce((s, c) => s + c.content.length, 0);
     document.getElementById('stats').textContent =
       `${chunks.length} chunk${chunks.length !== 1 ? 's' : ''} · ${totalChars} chars total · source: ${source}`;
 
     const container = document.getElementById('results');
     container.innerHTML = '';
+
     chunks.forEach((chunk, i) => {
+      const m   = chunk.metadata;
       const div = document.createElement('div');
       div.className = 'chunk';
-      const m = chunk.metadata;
+      div.dataset.index = i;
       div.innerHTML = `
         <div class="chunk-header" onclick="toggleChunk(this)">
-          <span>#${i}</span>
+          <span class="label">#${i}</span>
           <span>${chunk.content.length} chars</span>
-          <span>offset ${m.startChar}–${m.endChar}</span>
-          <span style="margin-left:auto;color:#888">▶ expand</span>
+          <span>${m.startChar}–${m.endChar}</span>
+          <span class="expand" style="margin-left:auto">▶ expand</span>
         </div>
-        <div class="chunk-body">${escHtml(chunk.content)}</div>`;
+        <div class="chunk-body">
+          <div class="section-label">Content</div>
+          <div class="chunk-text">${escHtml(chunk.content)}</div>
+          <div class="emb-placeholder"></div>
+        </div>`;
       container.appendChild(div);
+    });
+
+    const embedRow = document.getElementById('embedBtnRow');
+    embedRow.style.display = 'flex';
+    document.getElementById('embedBtn').textContent = 'Embed chunks';
+  }
+
+  function attachEmbeddings(embeddings) {
+    embeddings.forEach((emb, i) => {
+      const chunkDiv = document.querySelector(`.chunk[data-index="${i}"]`);
+      if (!chunkDiv) return;
+
+      const placeholder = chunkDiv.querySelector('.emb-placeholder');
+      placeholder.innerHTML = `
+        <div class="section-label" style="margin-top:.85rem">Embedding</div>
+        <div class="emb-stats">
+          <div><strong>Model</strong> ${escHtml(emb.model)}</div>
+          <div><strong>Dimensions</strong> ${emb.vector.length}</div>
+          <div><strong>Tokens</strong> ${emb.inputTokens}</div>
+        </div>
+        ${vectorTable(emb.vector)}`;
+
+      // update header with token count
+      const header = chunkDiv.querySelector('.chunk-header');
+      const tokenSpan = document.createElement('span');
+      tokenSpan.textContent = `${emb.inputTokens} tok`;
+      tokenSpan.style.cssText = 'color:#6366f1';
+      header.insertBefore(tokenSpan, header.querySelector('.expand'));
     });
   }
 
+  function vectorTable(vector) {
+    const rows = Array.from(vector).map((v, i) => {
+      const cls = v >= 0 ? 'pos' : 'neg';
+      return `<tr><td>${i}</td><td class="${cls}">${v.toFixed(6)}</td></tr>`;
+    }).join('');
+    return `<div class="vector-table-wrap">
+      <table class="vector-table">
+        <thead><tr><th>Dimension</th><th>Value</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  function applySimScores(queryVec) {
+    const scored = currentEmbeddings.map((emb, i) => ({
+      i,
+      score: cosineSim(queryVec, emb.vector)
+    }));
+    scored.sort((a, b) => b.score - a.score);
+
+    // clear old rank classes and badges
+    document.querySelectorAll('.chunk').forEach(el => {
+      el.classList.remove('rank-1', 'rank-2', 'rank-3');
+      const badge = el.querySelector('.sim-badge');
+      if (badge) badge.remove();
+    });
+
+    scored.forEach(({ i, score }, rank) => {
+      const chunkDiv = document.querySelector(`.chunk[data-index="${i}"]`);
+      if (!chunkDiv) return;
+      if (rank < 3) chunkDiv.classList.add(`rank-${rank + 1}`);
+
+      const pct   = Math.round(score * 100);
+      const color = score > 0.8 ? '#16a34a' : score > 0.6 ? '#ca8a04' : '#6b7280';
+      const badge = document.createElement('span');
+      badge.className = 'sim-badge';
+      badge.style.background = color;
+      badge.textContent = `${pct}%`;
+
+      const header = chunkDiv.querySelector('.chunk-header');
+      header.insertBefore(badge, header.querySelector('.expand'));
+    });
+
+    // scroll top result into view
+    if (scored.length) {
+      const top = document.querySelector(`.chunk[data-index="${scored[0].i}"]`);
+      if (top) top.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function cosineSim(a, b) {
+    // vectors are already unit-normalised by the server
+    let dot = 0;
+    const len = Math.min(a.length, b.length);
+    for (let i = 0; i < len; i++) dot += a[i] * b[i];
+    return dot;
+  }
+
   function toggleChunk(header) {
-    const body = header.nextElementSibling;
-    const arrow = header.querySelector('span:last-child');
+    const body  = header.nextElementSibling;
+    const arrow = header.querySelector('.expand');
     body.classList.toggle('open');
     arrow.textContent = body.classList.contains('open') ? '▼ collapse' : '▶ expand';
   }
 
   function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 </script>
 </body>
